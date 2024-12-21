@@ -1,0 +1,5 @@
+{
+    "security.workspace.trust.enabled": true,
+    "security.workspace.trust.untrustedFiles": "prompt",
+    "telemetry.telemetryLevel": "off"
+} 
