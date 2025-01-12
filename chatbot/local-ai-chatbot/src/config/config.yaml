@@ -1,0 +1,17 @@
+model:
+  name: "FineTunedChatbot"
+  version: "1.0"
+  parameters:
+    learning_rate: 0.001
+    epochs: 10
+    batch_size: 32
+    dropout_rate: 0.5
+
+api:
+  host: "127.0.0.1"
+  port: 5000
+  endpoint: "/chat"
+
+data:
+  training_data_path: "data/train_data.json"
+  testing_data_path: "data/test_data.json"

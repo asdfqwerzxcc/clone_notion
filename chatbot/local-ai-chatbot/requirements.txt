@@ -1,0 +1,11 @@
+flask
+flask-restful
+torch
+transformers
+scikit-learn
+pandas
+numpy
+pyyaml
+datasets  # Add this
+joblib    # Add this
+tqdm      # Add this
