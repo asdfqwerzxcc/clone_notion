@@ -4,6 +4,7 @@ import { animated, useSpring } from "@react-spring/web";
 import { motion } from "framer-motion";
 import { PlusIcon } from "lucide-react";
 import React, { useRef, useState } from "react";
+import { TodoLists, ViewMode } from "../_types/Task";
 
 // Add necessary interface/type definitions
 interface InputNewTaskProps {
