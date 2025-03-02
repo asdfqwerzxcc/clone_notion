@@ -3,16 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import {
-  PlusIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   EditIcon,
   XIcon,
   LayoutIcon,
   FileTextIcon,
   SaveIcon,
-  CheckIcon,
-  ArrowRightIcon,
   StarIcon,
   AwardIcon,
   MoonIcon,
@@ -24,75 +19,18 @@ import { useSpring, animated } from "@react-spring/web";
 import confetti from "canvas-confetti";
 import React from "react";
 
-// Type Definitions
-interface Task {
-  id: number;
-  text: string;
-  memo: string;
-  expanded: boolean;
-  markdownEnabled: boolean;
-  priority: "low" | "medium" | "high";
-  createdAt: number;
-}
+import Clock from "../../_components/Clock";
+import InputNewTask from "../../_components/Addinput";
+import TaskItem from "../../_components/TaskItem";
 
-interface TaskWithStatus extends Task {
-  status: "todo" | "progress" | "completed";
-}
-
-interface TodoLists {
-  todo: Task[];
-  progress: Task[];
-  completed: Task[];
-}
-
-interface EditModeState {
-  id: number;
-  list: string;
-}
-
-interface TaskItemProps {
-  task: Task;
-  list: string;
-  index: number;
-}
-
-interface TaskListProps {
-  title: string;
-  list: "todo" | "progress" | "completed";
-  tasks: Task[];
-  emptyMessage: string;
-}
-
-type ViewMode = "kanban" | "notepad";
-
-// Constants
-const PRIORITY_COLORS = {
-  high: {
-    bg: "bg-red-100 dark:bg-red-800",
-    border: "border-red-500",
-    badge: "bg-red-500",
-    text: "text-red-800 dark:text-red-100",
-  },
-  medium: {
-    bg: "bg-yellow-100 dark:bg-yellow-800",
-    border: "border-yellow-500",
-    badge: "bg-yellow-500",
-    text: "text-yellow-800 dark:text-yellow-100",
-  },
-  low: {
-    bg: "bg-blue-100 dark:bg-blue-800",
-    border: "border-blue-500",
-    badge: "bg-blue-500",
-    text: "text-blue-800 dark:text-blue-100",
-  },
-};
-
-const LIST_COLORS = {
-  todo: "from-red-500 to-pink-500 dark:from-red-700 dark:to-pink-700",
-  progress: "from-blue-500 to-indigo-500 dark:from-blue-700 dark:to-indigo-700",
-  completed:
-    "from-green-500 to-emerald-500 dark:from-green-700 dark:to-emerald-700",
-};
+import {
+  TodoLists,
+  TaskWithStatus,
+  ViewMode,
+  EditModeState,
+  TaskListProps,
+} from "../../_types/Task";
+import { LIST_COLORS } from "../../_constants/constant";
 
 export default function Home() {
   // State Declarations
@@ -155,106 +93,6 @@ export default function Home() {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos, mounted]);
 
-  // Utility Components and Functions
-  function Clock() {
-    const [currentTime, setCurrentTime] = useState(
-      new Date().toLocaleTimeString()
-    );
-    useEffect(() => {
-      const interval = setInterval(
-        () => setCurrentTime(new Date().toLocaleTimeString()),
-        1000
-      );
-      return () => clearInterval(interval);
-    }, []);
-    return (
-      <span className="text-sm text-gray-500 dark:text-gray-400">
-        {currentTime}
-      </span>
-    );
-  }
-
-  function Input() {
-    const [newTask, setNewTask] = useState<string>("");
-    const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
-      "medium"
-    );
-    const addTask = () => {
-      if (!newTask.trim()) return;
-      const newId = Date.now();
-      setTodos((prev) => ({
-        ...prev,
-        todo: [
-          ...prev.todo,
-          {
-            id: newId,
-            text: newTask,
-            memo: "",
-            expanded: false,
-            markdownEnabled: true,
-            priority: taskPriority,
-            createdAt: newId,
-          },
-        ],
-      }));
-      setNewTask("");
-      setTaskPriority("medium");
-      if (viewMode === "notepad") setSelectedNote(newId);
-      inputRef.current?.focus();
-    };
-
-    const inputAnimProps = useSpring({
-      boxShadow: isInputFocused
-        ? "0 0 0 3px rgba(59, 130, 246, 0.5)"
-        : "0 1px 3px rgba(0,0,0,0.1)",
-      transform: isInputFocused ? "scale(1.01)" : "scale(1)",
-      config: { tension: 280, friction: 20 },
-    });
-
-    return (
-      <animated.div
-        style={inputAnimProps}
-        className="flex mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow transition-colors duration-300"
-      >
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Add a new task..."
-          className="flex-grow px-4 py-2 mr-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && addTask()}
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
-        />
-        <div className="flex space-x-2 items-center">
-          <select
-            value={taskPriority}
-            onChange={(e) =>
-              setTaskPriority(e.target.value as "low" | "medium" | "high")
-            }
-            className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-          <motion.button
-            onClick={addTask}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={!newTask.trim()}
-          >
-            <PlusIcon size={16} className="mr-1" />
-            Add Task
-          </motion.button>
-        </div>
-      </animated.div>
-    );
-  }
   const triggerConfetti = () => {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
   };
@@ -390,159 +228,6 @@ export default function Home() {
 
   if (!mounted) return null;
 
-  // TaskItem Component
-  const TaskItem = React.memo(
-    ({ task, list, index }: TaskItemProps) => (
-      <motion.div
-        className={`p-3 mb-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border-l-4 ${PRIORITY_COLORS[task.priority].border}`}
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ layout: { duration: 0.2 }, delay: index * 0.05 }}
-        draggable
-        onDragStart={(e) =>
-          handleDragStart(e as unknown as React.DragEvent, task.id, list)
-        }
-        whileHover={{ scale: 1.02, boxShadow: "0 5px 15px rgba(0,0,0,0.1)" }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <span
-              className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority].badge} mr-2`}
-            ></span>
-            <span className="text-gray-800 dark:text-gray-200 font-medium">
-              {task.text}
-            </span>
-          </div>
-          <div className="flex items-center space-x-1">
-            {list !== "completed" && (
-              <button
-                onClick={() => moveTask(task.id, list, "completed")}
-                className="p-1 text-green-500 hover:text-green-600 transition-colors duration-200"
-              >
-                <CheckIcon size={16} />
-              </button>
-            )}
-            {list === "todo" && (
-              <button
-                onClick={() => moveTask(task.id, list, "progress")}
-                className="p-1 text-blue-500 hover:text-blue-600 transition-colors duration-200"
-              >
-                <ArrowRightIcon size={16} />
-              </button>
-            )}
-            <button
-              onClick={() => toggleExpand(task.id, list)}
-              className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
-            >
-              {task.expanded ? (
-                <ChevronUpIcon size={16} />
-              ) : (
-                <ChevronDownIcon size={16} />
-              )}
-            </button>
-          </div>
-        </div>
-        <AnimatePresence>
-          {task.expanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600"
-            >
-              {editMode && editMode.id === task.id ? (
-                <div className="space-y-2">
-                  <textarea
-                    className="w-full p-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 dark:text-gray-200 font-mono transition-colors duration-200"
-                    value={editMemo}
-                    onChange={(e) => setEditMemo(e.target.value)}
-                    rows={6}
-                    placeholder="Enter your memo..."
-                  />
-                  <div className="flex justify-end">
-                    <motion.button
-                      onClick={saveMemo}
-                      className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <SaveIcon size={12} className="mr-1" />
-                      Save
-                    </motion.button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="p-3 text-sm bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 min-h-[80px] whitespace-pre-wrap transition-colors duration-200">
-                    {task.memo ? (
-                      <ReactMarkdown>{task.memo}</ReactMarkdown>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-500 italic">
-                        No memo
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <select
-                      value={task.priority}
-                      onChange={(e) =>
-                        changePriority(
-                          task.id,
-                          list,
-                          e.target.value as "low" | "medium" | "high"
-                        )
-                      }
-                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded transition-colors duration-200"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                    <motion.button
-                      onClick={() => startEditMemo(task.id, list)}
-                      className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <EditIcon size={12} className="mr-1" />
-                      Edit Memo
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(task.createdAt).toLocaleDateString()}
-          </span>
-          <motion.button
-            onClick={() => deleteTask(task.id, list)}
-            className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition flex items-center"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <XIcon size={12} className="mr-1" />
-            Delete
-          </motion.button>
-        </div>
-      </motion.div>
-    ),
-    (prev, next) =>
-      prev.task.id === next.task.id &&
-      prev.task.text === next.task.text &&
-      prev.task.memo === next.task.memo &&
-      prev.task.expanded === next.task.expanded &&
-      prev.task.priority === next.task.priority &&
-      prev.list === next.list &&
-      prev.index === next.index
-  );
-  TaskItem.displayName = "TaskItem";
   // TaskList Component
   const TaskList = React.memo(
     ({ title, list, tasks, emptyMessage }: TaskListProps) => (
@@ -592,7 +277,22 @@ export default function Home() {
           ) : (
             <AnimatePresence>
               {tasks.map((task, index) => (
-                <TaskItem key={task.id} task={task} list={list} index={index} />
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  list={list}
+                  index={index}
+                  handleDragStart={handleDragStart}
+                  moveTask={moveTask}
+                  toggleExpand={toggleExpand}
+                  editMode={editMode}
+                  editMemo={editMemo}
+                  setEditMemo={setEditMemo}
+                  saveMemo={saveMemo}
+                  changePriority={changePriority}
+                  startEditMemo={startEditMemo}
+                  deleteTask={deleteTask}
+                />
               ))}
             </AnimatePresence>
           )}
@@ -852,7 +552,6 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-
         <animated.div
           style={toolbarProps}
           className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow transition-colors duration-300"
@@ -908,7 +607,11 @@ export default function Home() {
             </motion.div>
           </div>
         </animated.div>
-        <Input />
+        <InputNewTask
+          setTodos={setTodos}
+          viewMode={viewMode}
+          setSelectedNote={setSelectedNote}
+        />{" "}
         <div className="space-y-8">
           {viewMode === "kanban" ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
