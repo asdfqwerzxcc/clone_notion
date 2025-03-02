@@ -105,7 +105,6 @@ export default function Home() {
       ? "dark"
       : "light";
   });
-  const [newTask, setNewTask] = useState<string>("");
   const [editMode, setEditMode] = useState<EditModeState | null>(null);
   const [editMemo, setEditMemo] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
@@ -118,20 +117,17 @@ export default function Home() {
   const [allTasks, setAllTasks] = useState<TaskWithStatus[]>([]);
   const [showCompletionEffect, setShowCompletionEffect] =
     useState<boolean>(false);
-  const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
-    "medium"
-  );
-  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
 
   const completedCount = useRef<number>(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const dropAreaRef = useRef<HTMLDivElement>(null);
 
   // Load Initial Data
   useEffect(() => {
     setMounted(true);
     const savedTodos = localStorage.getItem("todos");
-    if (savedTodos) setTodos(JSON.parse(savedTodos));
+    if (savedTodos) {
+      setTodos(JSON.parse(savedTodos));
+    }
     const savedViewMode = localStorage.getItem("viewMode");
     if (savedViewMode === "kanban" || savedViewMode === "notepad")
       setViewMode(savedViewMode);
@@ -141,6 +137,8 @@ export default function Home() {
 
   // Sync Todos and LocalStorage
   useEffect(() => {
+    if (!mounted) return;
+
     const combined: TaskWithStatus[] = [
       ...todos.todo.map((task) => ({ ...task, status: "todo" as "todo" })),
       ...todos.progress.map((task) => ({
@@ -152,9 +150,10 @@ export default function Home() {
         status: "completed" as "completed",
       })),
     ];
+
     setAllTasks(combined);
     localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
+  }, [todos, mounted]);
 
   // Utility Components and Functions
   function Clock() {
@@ -175,6 +174,87 @@ export default function Home() {
     );
   }
 
+  function Input() {
+    const [newTask, setNewTask] = useState<string>("");
+    const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
+      "medium"
+    );
+    const addTask = () => {
+      if (!newTask.trim()) return;
+      const newId = Date.now();
+      setTodos((prev) => ({
+        ...prev,
+        todo: [
+          ...prev.todo,
+          {
+            id: newId,
+            text: newTask,
+            memo: "",
+            expanded: false,
+            markdownEnabled: true,
+            priority: taskPriority,
+            createdAt: newId,
+          },
+        ],
+      }));
+      setNewTask("");
+      setTaskPriority("medium");
+      if (viewMode === "notepad") setSelectedNote(newId);
+      inputRef.current?.focus();
+    };
+
+    const inputAnimProps = useSpring({
+      boxShadow: isInputFocused
+        ? "0 0 0 3px rgba(59, 130, 246, 0.5)"
+        : "0 1px 3px rgba(0,0,0,0.1)",
+      transform: isInputFocused ? "scale(1.01)" : "scale(1)",
+      config: { tension: 280, friction: 20 },
+    });
+
+    return (
+      <animated.div
+        style={inputAnimProps}
+        className="flex mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow transition-colors duration-300"
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Add a new task..."
+          className="flex-grow px-4 py-2 mr-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && addTask()}
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
+        />
+        <div className="flex space-x-2 items-center">
+          <select
+            value={taskPriority}
+            onChange={(e) =>
+              setTaskPriority(e.target.value as "low" | "medium" | "high")
+            }
+            className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <motion.button
+            onClick={addTask}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={!newTask.trim()}
+          >
+            <PlusIcon size={16} className="mr-1" />
+            Add Task
+          </motion.button>
+        </div>
+      </animated.div>
+    );
+  }
   const triggerConfetti = () => {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
   };
@@ -187,30 +267,6 @@ export default function Home() {
     const newMode: ViewMode = viewMode === "kanban" ? "notepad" : "kanban";
     setViewMode(newMode);
     localStorage.setItem("viewMode", newMode);
-  };
-
-  const addTask = () => {
-    if (!newTask.trim()) return;
-    const newId = Date.now();
-    setTodos((prev) => ({
-      ...prev,
-      todo: [
-        ...prev.todo,
-        {
-          id: newId,
-          text: newTask,
-          memo: "",
-          expanded: false,
-          markdownEnabled: true,
-          priority: taskPriority,
-          createdAt: newId,
-        },
-      ],
-    }));
-    setNewTask("");
-    setTaskPriority("medium");
-    if (viewMode === "notepad") setSelectedNote(newId);
-    inputRef.current?.focus();
   };
 
   const moveTask = (
@@ -329,13 +385,6 @@ export default function Home() {
     opacity: 1,
     y: 0,
     from: { opacity: 0, y: -20 },
-    config: { tension: 280, friction: 20 },
-  });
-  const inputAnimProps = useSpring({
-    boxShadow: isInputFocused
-      ? "0 0 0 3px rgba(59, 130, 246, 0.5)"
-      : "0 1px 3px rgba(0,0,0,0.1)",
-    transform: isInputFocused ? "scale(1.01)" : "scale(1)",
     config: { tension: 280, friction: 20 },
   });
 
@@ -859,47 +908,7 @@ export default function Home() {
             </motion.div>
           </div>
         </animated.div>
-
-        <animated.div
-          style={inputAnimProps}
-          className="flex mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow transition-colors duration-300"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Add a new task..."
-            className="flex-grow px-4 py-2 mr-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && addTask()}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
-          />
-          <div className="flex space-x-2 items-center">
-            <select
-              value={taskPriority}
-              onChange={(e) =>
-                setTaskPriority(e.target.value as "low" | "medium" | "high")
-              }
-              className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <motion.button
-              onClick={addTask}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              disabled={!newTask.trim()}
-            >
-              <PlusIcon size={16} className="mr-1" />
-              Add Task
-            </motion.button>
-          </div>
-        </animated.div>
-
+        <Input />
         <div className="space-y-8">
           {viewMode === "kanban" ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
