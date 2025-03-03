@@ -59,7 +59,7 @@ const TaskList = React.memo(
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      ref={list === "todo" ? dropAreaRef : dropAreaRef}
+      ref={list === "todo" ? dropAreaRef : undefined}
       onDragOver={handleDragOver}
       onDrop={(e) => handleDrop(e, list)}
     >
@@ -130,6 +130,7 @@ const TaskList = React.memo(
     prev.tasks === next.tasks &&
     prev.editMode === next.editMode &&
     prev.editMemo === next.editMemo &&
+    prev.dropAreaRef === next.dropAreaRef &&
     prev.tasks.every((task, i) => {
       const nextTask = next.tasks[i];
       return (

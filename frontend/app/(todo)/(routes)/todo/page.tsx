@@ -2,14 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
-import {
-  LayoutIcon,
-  FileTextIcon,
-  StarIcon,
-  AwardIcon,
-  MoonIcon,
-  SunIcon,
-} from "lucide-react";
+import { LayoutIcon, FileTextIcon, StarIcon, AwardIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSpring, animated } from "@react-spring/web";
 import confetti from "canvas-confetti";
@@ -95,16 +88,25 @@ export default function Home() {
     fromList: string,
     toList: "todo" | "progress" | "completed"
   ) => {
-    const task = todos[fromList as keyof TodoLists].find((t) => t.id === id);
-    console.log(todos);
-    if (!task) return;
+    setTodos((prev) => {
+      // 여기서 task 찾기
+      const task = prev[fromList as keyof TodoLists].find((t) => t.id === id);
+      if (!task) return prev; // 작업이 없으면 이전 상태 반환
 
-    setTodos((prev) => ({
-      ...prev,
-      [fromList]: prev[fromList as keyof TodoLists].filter((t) => t.id !== id),
-      [toList]: [...prev[toList], task],
-    }));
+      // 새 상태 생성 및 반환
+      const newState = {
+        ...prev,
+        [fromList]: prev[fromList as keyof TodoLists].filter(
+          (t) => t.id !== id
+        ),
+        [toList]: [...prev[toList], task],
+      };
 
+      // 완료 효과 트리거는 setTodos 콜백 밖에서 처리
+      return newState;
+    });
+
+    // 완료 효과 트리거 로직
     if (toList === "completed" && fromList !== "completed") {
       setShowCompletionEffect(true);
       triggerConfetti();
@@ -202,11 +204,13 @@ export default function Home() {
     toList: "todo" | "progress" | "completed"
   ) => {
     e.preventDefault();
-    console.log("drop", toList);
+
     const id = parseInt(e.dataTransfer.getData("taskId"));
     const fromList = e.dataTransfer.getData("fromList");
 
-    if (fromList !== toList) moveTask(id, fromList, toList);
+    if (fromList !== toList) {
+      moveTask(id, fromList, toList);
+    }
   };
 
   // Animation Props

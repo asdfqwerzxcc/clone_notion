@@ -73,9 +73,9 @@ const TaskItem = React.memo(
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ layout: { duration: 0.2 }, delay: index * 0.05 }}
         draggable={!(editMode && editMode.id === task.id)}
-        onDragStart={(e) =>
-          handleDragStart(e as unknown as React.DragEvent, task.id, list)
-        }
+        onDragStart={(e) => {
+          handleDragStart(e as unknown as React.DragEvent, task.id, list);
+        }}
         whileHover={{ scale: 1.02, boxShadow: "0 5px 15px rgba(0,0,0,0.1)" }}
         whileTap={{ scale: 0.98 }}
       >
