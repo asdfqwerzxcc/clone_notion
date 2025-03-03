@@ -1,0 +1,15 @@
+# 민감한 파일 및 디렉토리
+.env*
+secrets/
+*password*
+*key*
+*token*
+config/sensitive/
+credentials/
+private/
+
+# 개인정보 관련 파일
+*.pem
+*.key
+*.cert
+*.pwd 
